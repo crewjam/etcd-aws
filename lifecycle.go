@@ -53,8 +53,15 @@ func handleLifecycleEvent(m *ec2cluster.LifecycleMessage) (shouldContinue bool, 
 
 func watchLifecycleEvents(s *ec2cluster.Cluster, localInstance *ec2.Instance) {
 	etcdLocalURL = fmt.Sprintf("http://%s:2379", *localInstance.PrivateIpAddress)
+
+	// we need to get the lifecycle event queue url
+	queueURL, err := s.LifecycleEventQueueURL()
+	if err != nil {
+		log.Fatalf("ERROR: unable to get lifecycle queue: %s", err)
+	}
+
 	for {
-		err := s.WatchLifecycleEvents(handleLifecycleEvent)
+		err := s.WatchLifecycleEvents(queueURL, handleLifecycleEvent)
 
 		// The lifecycle hook might not exist yet if we're being created
 		// by cloudformation.
